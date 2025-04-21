@@ -8,7 +8,7 @@ export class Player {
         this.velocityX = 0;
         this.velocityY = 0;
         this.jumpForce = -15;
-        this.speed = 5;
+        this.speed = 3;
         this.isJumping = false;
         this.isFacingRight = true;
         
