@@ -380,20 +380,4 @@ export class Player {
         
         ctx.restore();
     }
-    
-    move(direction) {
-        // Check if device is mobile
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Adjust speed based on device type
-        const speed = isMobile ? 3 : 5;
-        
-        if (direction === 'left') {
-            this.velocityX = -speed;
-            this.isFacingRight = false;
-        } else if (direction === 'right') {
-            this.velocityX = speed;
-            this.isFacingRight = true;
-        }
-    }
 } 

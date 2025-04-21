@@ -1,14 +1,19 @@
 export class Sun {
     constructor(game) {
         this.game = game;
-        this.radius = 60;
-        this.x = this.game.width - 100;
-        this.y = 100;
+        this.radius = Math.min(game.width, game.height) * 0.1; // 10% of smaller screen dimension
+        this.rayLength = this.radius * 0.3;
+        this.rayWidth = this.radius * 0.07;
         this.rays = 12;
-        this.rayLength = 20;
-        this.rayWidth = 4;
         this.rotation = 0;
         this.rotationSpeed = 0.005;
+        this.updatePosition();
+    }
+
+    updatePosition() {
+        // Position sun in top-right quarter of screen
+        this.x = this.game.width * 0.8;
+        this.y = this.game.height * 0.2;
     }
 
     update() {

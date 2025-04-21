@@ -24,20 +24,15 @@ export class Game {
         this.platforms = [];
         this.stars = [];
         this.camera = { x: 0, y: 0 };
+        this.targetCamera = { x: 0, y: 0 };
         
         this.score = 0;
         this.level = 1;
-        this.gameState = 'playing'; // 'playing', 'completed', 'gameOver'
-        this.showSplash = true; // Add flag to control splash screen
+        this.gameState = 'splash'; // 'splash', 'playing', 'completed', 'gameOver'
         
-        // Check if device is mobile
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Leaderboard properties
-        this.leaderboard = [];
-        this.playerName = '';
-        this.showNameInput = false;
-        this.nameInput = '';
+        // Splash screen properties
+        this.splashOpacity = 1;
+        this.splashFadeSpeed = 0.02;
         
         // Fire properties
         this.fireParticles = [];
@@ -50,13 +45,17 @@ export class Game {
         this.maxClouds = 5;
         this.generateClouds();
         
-        // Add sun
+        // Add sun after canvas is sized
         this.sun = new Sun(this);
         
         this.generateInitialLevel();
         
-        // Load leaderboard
-        this.loadLeaderboard();
+        // Start splash screen fade after 2 seconds
+        if (this.level === 1) {
+            setTimeout(() => {
+                this.startSplashFade();
+            }, 2000);
+        }
     }
     
     resizeCanvas() {
@@ -67,6 +66,11 @@ export class Game {
         // Update game properties
         this.width = this.canvas.width;
         this.height = this.canvas.height;
+        
+        // Update sun position and size if it exists
+        if (this.sun) {
+            this.sun.updatePosition();
+        }
         
         // Adjust player position if needed
         if (this.player) {
@@ -99,19 +103,30 @@ export class Game {
         }
     }
     
+    updateCamera() {
+        if (this.gameState === 'panning') {
+            // During pan, slowly move to player
+            const targetX = this.player.x - this.width / 2;
+            const targetY = this.player.y - this.height / 2;
+            
+            // Smooth camera movement
+            this.camera.x += (targetX - this.camera.x) * 0.05;
+            this.camera.y += (targetY - this.camera.y) * 0.05;
+        } else if (this.gameState === 'playing') {
+            // Normal camera following during gameplay
+            this.camera.x = this.player.x - this.width / 2;
+            this.camera.y = this.player.y - this.height / 2;
+        }
+    }
+    
     update() {
-        if (this.gameState === 'playing') {
+        if (this.gameState === 'playing' || this.gameState === 'panning') {
             this.player.update();
             this.updateCamera();
             
             // Update clouds and sun
             this.clouds.forEach(cloud => cloud.update());
             this.sun.update();
-            
-            // Hide splash screen when player moves
-            if (this.showSplash && (this.player.velocityX !== 0 || this.player.velocityY !== 0)) {
-                this.showSplash = false;
-            }
             
             // Check for death by falling into fire
             const lowestPlatform = Math.max(...this.platforms.map(p => p.y));
@@ -157,12 +172,6 @@ export class Game {
                player.x + player.width > object.x &&
                player.y < object.y + object.height &&
                player.y + player.height > object.y;
-    }
-    
-    updateCamera() {
-        // Center camera on player with some offset
-        this.camera.x = this.player.x - this.width / 2;
-        this.camera.y = this.player.y - this.height / 2;
     }
     
     updateFire() {
@@ -235,6 +244,17 @@ export class Game {
         
         // Draw UI
         this.drawUI();
+        
+        // Draw splash screen if needed
+        if (this.gameState === 'splash' && this.level === 1) {
+            this.ctx.fillStyle = `rgba(0, 0, 0, ${this.splashOpacity * 0.7})`;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${this.splashOpacity})`;
+            this.ctx.font = '48px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Pick all the flowers', this.width/2, this.height/2);
+        }
     }
     
     drawFire() {
@@ -278,87 +298,26 @@ export class Game {
         this.ctx.fillText(`Flowers: ${this.score}`, this.width/2, padding + 20);
         this.ctx.fillText(`Level: ${this.level}`, this.width/2, padding + 50);
         
-        // Show splash screen for level 1
-        if (this.level === 1 && this.showSplash) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            this.ctx.fillRect(0, 0, this.width, this.height);
-            
-            this.ctx.fillStyle = 'white';
-            this.ctx.font = '48px Arial';
-            this.ctx.fillText('Pick all the flowers!', this.width/2, this.height/2);
-            this.ctx.font = '24px Arial';
-            
-            // Show different controls based on device type
-            if (this.isMobile) {
-                this.ctx.fillText('Tilt your phone to move', this.width/2, this.height/2 + 50);
-                this.ctx.fillText('Tap screen to jump', this.width/2, this.height/2 + 80);
-                this.ctx.fillText('Tap anywhere to start', this.width/2, this.height/2 + 110);
-            } else {
-                this.ctx.fillText('Use arrow keys to move', this.width/2, this.height/2 + 50);
-                this.ctx.fillText('Press space to jump', this.width/2, this.height/2 + 80);
-                this.ctx.fillText('Press any key to start', this.width/2, this.height/2 + 110);
-            }
-        }
-        
         if (this.gameState === 'completed') {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             this.ctx.fillRect(0, 0, this.width, this.height);
             
             this.ctx.fillStyle = 'white';
             this.ctx.font = '48px Arial';
+            this.ctx.textAlign = 'center';
             this.ctx.fillText('Level Complete!', this.width/2, this.height/2);
             this.ctx.font = '24px Arial';
             this.ctx.fillText('Loading next level...', this.width/2, this.height/2 + 40);
         } else if (this.gameState === 'dying' || this.gameState === 'gameOver') {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             this.ctx.fillRect(0, 0, this.width, this.height);
             
             this.ctx.fillStyle = 'white';
             this.ctx.font = '48px Arial';
-            this.ctx.fillText(this.gameState === 'dying' ? 'Ouch!' : 'Game Over!', this.width/2, this.height/2 - 100);
-            
-            if (this.showNameInput) {
-                // Draw name input
-                this.ctx.font = '24px Arial';
-                this.ctx.fillText('Enter your name:', this.width/2, this.height/2);
-                
-                // Draw input box
-                this.ctx.fillStyle = 'white';
-                this.ctx.strokeStyle = 'white';
-                this.ctx.lineWidth = 2;
-                const inputWidth = 200;
-                const inputHeight = 40;
-                const inputX = this.width/2 - inputWidth/2;
-                const inputY = this.height/2 + 30;
-                this.ctx.strokeRect(inputX, inputY, inputWidth, inputHeight);
-                
-                // Draw current input
-                this.ctx.fillText(this.nameInput || 'Type here...', this.width/2, inputY + inputHeight/2 + 8);
-                
-                // Draw submit button
-                this.ctx.fillStyle = '#4CAF50';
-                this.ctx.fillRect(inputX, inputY + inputHeight + 20, inputWidth, 40);
-                this.ctx.fillStyle = 'white';
-                this.ctx.fillText('Submit', this.width/2, inputY + inputHeight + 45);
-            } else {
-                // Draw leaderboard
-                this.ctx.font = '24px Arial';
-                this.ctx.fillText('Leaderboard', this.width/2, this.height/2);
-                
-                // Draw top 5 scores
-                this.ctx.font = '20px Arial';
-                for (let i = 0; i < Math.min(5, this.leaderboard.length); i++) {
-                    const entry = this.leaderboard[i];
-                    this.ctx.fillText(
-                        `${i + 1}. ${entry.name} - ${entry.score} flowers (Level ${entry.level})`,
-                        this.width/2,
-                        this.height/2 + 50 + i * 30
-                    );
-                }
-                
-                // Draw restart prompt
-                this.ctx.fillText('Press R to restart', this.width/2, this.height/2 + 250);
-            }
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(this.gameState === 'dying' ? 'Ouch!' : 'Game Over!', this.width/2, this.height/2);
+            this.ctx.font = '24px Arial';
+            this.ctx.fillText('Press screen to restart', this.width/2, this.height/2 + 40);
         }
     }
     
@@ -366,9 +325,6 @@ export class Game {
         this.score = 0;
         this.level = 1;
         this.gameState = 'playing';
-        this.showSplash = true;
-        this.showNameInput = true;
-        this.nameInput = '';
         this.generateInitialLevel();
         this.player.reset();
     }
@@ -382,75 +338,20 @@ export class Game {
     start() {
         this.gameLoop();
     }
-
-    async loadLeaderboard() {
-        try {
-            const response = await fetch('YOUR_GET_LEADERBOARD_URL');
-            const data = await response.json();
-            this.leaderboard = data;
-        } catch (error) {
-            console.error('Failed to load leaderboard:', error);
-        }
-    }
-
-    async submitScore() {
-        if (!this.playerName) return;
-        
-        try {
-            const response = await fetch('YOUR_PUT_LEADERBOARD_URL', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: this.playerName,
-                    score: this.score,
-                    level: this.level
-                })
-            });
-            
-            if (response.ok) {
-                await this.loadLeaderboard();
+    
+    startSplashFade() {
+        const fadeInterval = setInterval(() => {
+            this.splashOpacity -= this.splashFadeSpeed;
+            if (this.splashOpacity <= 0) {
+                this.splashOpacity = 0;
+                this.gameState = 'panning'; // New state for camera pan
+                clearInterval(fadeInterval);
+                
+                // Start camera pan after fade
+                setTimeout(() => {
+                    this.gameState = 'playing';
+                }, 2000); // Pan for 2 seconds
             }
-        } catch (error) {
-            console.error('Failed to submit score:', error);
-        }
-    }
-
-    handleKeyDown(e) {
-        if (this.gameState === 'gameOver' && this.showNameInput) {
-            if (e.key === 'Enter') {
-                this.playerName = this.nameInput;
-                this.showNameInput = false;
-                this.submitScore();
-            } else if (e.key === 'Backspace') {
-                this.nameInput = this.nameInput.slice(0, -1);
-            } else if (e.key.length === 1 && this.nameInput.length < 20) {
-                this.nameInput += e.key;
-            }
-        } else if (this.showSplash) {
-            // Hide splash screen on any key press
-            this.showSplash = false;
-        }
-    }
-
-    handleClick(x, y) {
-        if (this.gameState === 'gameOver' && this.showNameInput) {
-            const inputWidth = 200;
-            const inputHeight = 40;
-            const inputX = this.width/2 - inputWidth/2;
-            const inputY = this.height/2 + 30;
-            
-            // Check if submit button was clicked
-            if (x >= inputX && x <= inputX + inputWidth &&
-                y >= inputY + inputHeight + 20 && y <= inputY + inputHeight + 60) {
-                this.playerName = this.nameInput;
-                this.showNameInput = false;
-                this.submitScore();
-            }
-        } else if (this.showSplash) {
-            // Hide splash screen on any tap
-            this.showSplash = false;
-        }
+        }, 16); // ~60fps
     }
 } 
