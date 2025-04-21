@@ -292,9 +292,11 @@ export class Game {
             if (this.isMobile) {
                 this.ctx.fillText('Tilt your phone to move', this.width/2, this.height/2 + 50);
                 this.ctx.fillText('Tap screen to jump', this.width/2, this.height/2 + 80);
+                this.ctx.fillText('Tap anywhere to start', this.width/2, this.height/2 + 110);
             } else {
                 this.ctx.fillText('Use arrow keys to move', this.width/2, this.height/2 + 50);
                 this.ctx.fillText('Press space to jump', this.width/2, this.height/2 + 80);
+                this.ctx.fillText('Press any key to start', this.width/2, this.height/2 + 110);
             }
         }
         
@@ -426,6 +428,9 @@ export class Game {
             } else if (e.key.length === 1 && this.nameInput.length < 20) {
                 this.nameInput += e.key;
             }
+        } else if (this.showSplash) {
+            // Hide splash screen on any key press
+            this.showSplash = false;
         }
     }
 
@@ -443,6 +448,9 @@ export class Game {
                 this.showNameInput = false;
                 this.submitScore();
             }
+        } else if (this.showSplash) {
+            // Hide splash screen on any tap
+            this.showSplash = false;
         }
     }
 } 
