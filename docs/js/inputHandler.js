@@ -57,12 +57,14 @@ export class InputHandler {
     }
     
     handleTouchStart(e) {
+        // Always allow jump on tap
+        this.keys.up = true;
+        
         // Only prevent scrolling during gameplay
         if (this.game.gameState === 'playing' || this.game.gameState === 'panning') {
             e.preventDefault();
             this.touchStartX = e.touches[0].clientX;
             this.touchStartY = e.touches[0].clientY;
-            this.keys.up = true; // Jump on tap
         }
     }
     
@@ -86,14 +88,14 @@ export class InputHandler {
                     this.keys.right = false;
                 }
             }
-            
-            // Reset keys after a short delay
-            setTimeout(() => {
-                this.keys.up = false;
-                this.keys.left = false;
-                this.keys.right = false;
-            }, 100);
         }
+        
+        // Reset keys after a short delay
+        setTimeout(() => {
+            this.keys.up = false;
+            this.keys.left = false;
+            this.keys.right = false;
+        }, 100);
     }
     
     handleTouchMove(e) {
