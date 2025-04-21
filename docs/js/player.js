@@ -9,7 +9,7 @@ export class Player {
         this.velocityY = 0;
         this.jumpForce = -15;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        this.speed = isMobile ? 3 : 5;
+        this.speed = isMobile ? 3 : 7;
         
         
         this.isJumping = false;
