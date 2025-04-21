@@ -224,14 +224,14 @@ export class Game {
     drawUI() {
         this.ctx.fillStyle = 'white';
         this.ctx.font = '20px Arial';
-        this.ctx.textAlign = 'left';
+        this.ctx.textAlign = 'center';
         
-        // Add padding from the edges
+        // Add padding from the top
         const padding = 20;
         
-        // Draw score and level with proper padding
-        this.ctx.fillText(`Flowers: ${this.score}`, padding, padding + 20);
-        this.ctx.fillText(`Level: ${this.level}`, padding, padding + 50);
+        // Draw score and level centered at the top
+        this.ctx.fillText(`Flowers: ${this.score}`, this.width/2, padding + 20);
+        this.ctx.fillText(`Level: ${this.level}`, this.width/2, padding + 50);
         
         if (this.gameState === 'completed') {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
