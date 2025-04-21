@@ -3,14 +3,25 @@ export class Player {
         this.game = game;
         this.width = 40;
         this.height = 60;
-        this.x = 100;
-        this.y = 100;
+        this.x = 50;
+        this.y = game.height - 150;
         this.velocityX = 0;
         this.velocityY = 0;
-        this.jumpForce = -15;
-        this.speed = 3;
+        this.jumpForce = -12;
         this.isJumping = false;
         this.isFacingRight = true;
+        this.currentState = 'idle';
+        this.animationFrame = 0;
+        this.animationSpeed = 0.2;
+        this.animations = {
+            idle: this.createIdleAnimation(),
+            running: this.createRunningAnimation(),
+            jumping: this.createJumpingAnimation()
+        };
+        
+        // Set speed based on device type
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.speed = isMobile ? 2 : 5;
         
         // Animation states
         this.animationStates = {
@@ -19,7 +30,6 @@ export class Player {
             jumping: { frame: 0, maxFrames: 2 },
             dying: { frame: 0, maxFrames: 8 }
         };
-        this.currentState = 'idle';
         this.animationTimer = 0;
         this.animationInterval = 100; // ms
         
@@ -34,8 +44,8 @@ export class Player {
     }
     
     reset() {
-        this.x = 100;
-        this.y = 100;
+        this.x = 50;
+        this.y = this.game.height - 150;
         this.velocityX = 0;
         this.velocityY = 0;
         this.isJumping = false;
