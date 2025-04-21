@@ -59,6 +59,19 @@ export class Game {
                 this.startSplashFade();
             }, 2000);
         }
+        
+        // Add restart handlers
+        this.canvas.addEventListener('click', () => {
+            if (this.gameState === 'gameOver') {
+                this.resetGame();
+            }
+        });
+        
+        window.addEventListener('keydown', (e) => {
+            if (this.gameState === 'gameOver') {
+                this.resetGame();
+            }
+        });
     }
     
     resizeCanvas() {
@@ -135,15 +148,8 @@ export class Game {
             const lowestPlatform = Math.max(...this.platforms.map(p => p.y));
             const fireY = lowestPlatform + this.fireOffset;
             
-            if (this.player.y > fireY) {
-                this.gameState = 'dying';
-                this.player.startDyingAnimation();
-                setTimeout(() => {
-                    this.gameState = 'gameOver';
-                    setTimeout(() => {
-                        this.resetGame();
-                    }, 2000);
-                }, 1500);
+            if (this.player.y > fireY && this.gameState === 'playing') {
+                this.gameState = 'gameOver';
             }
             
             // Update stars
@@ -311,16 +317,20 @@ export class Game {
             this.ctx.fillText('Level Complete!', this.width/2, this.height/2);
             this.ctx.font = '24px Arial';
             this.ctx.fillText('Loading next level...', this.width/2, this.height/2 + 40);
-        } else if (this.gameState === 'dying' || this.gameState === 'gameOver') {
+        } else if (this.gameState === 'gameOver') {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             this.ctx.fillRect(0, 0, this.width, this.height);
             
             this.ctx.fillStyle = 'white';
             this.ctx.font = '48px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.gameState === 'dying' ? 'Ouch!' : 'Game Over!', this.width/2, this.height/2);
+            this.ctx.fillText('Game Over!', this.width/2, this.height/2);
             this.ctx.font = '24px Arial';
-            this.ctx.fillText('Press R to restart', this.width/2, this.height/2 + 40);
+            
+            // Check if device is mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const restartMessage = isMobile ? 'Tap the screen to restart' : 'Press any key to restart';
+            this.ctx.fillText(restartMessage, this.width/2, this.height/2 + 40);
         }
     }
     

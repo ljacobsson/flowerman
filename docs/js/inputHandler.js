@@ -9,81 +9,21 @@ export class InputHandler {
         
         this.touchStartX = 0;
         this.touchStartY = 0;
+        this.touchEndX = 0;
+        this.touchEndY = 0;
         this.gyroX = 0;
         this.gyroY = 0;
         this.gyroSmoothing = 0.1; // Smoothing factor for gyro input
-        this.gyroMultiplier = 0.2; // Reduced sensitivity multiplier
+        this.gyroMultiplier = 0.1; // Reduced sensitivity multiplier
         
         // Keyboard event listeners
-        window.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'ArrowLeft':
-                    this.keys.left = true;
-                    break;
-                case 'ArrowRight':
-                    this.keys.right = true;
-                    break;
-                case 'ArrowUp':
-                case ' ':
-                    this.keys.up = true;
-                    break;
-                case 'r':
-                case 'R':
-                    this.keys.restart = true;
-                    break;
-            }
-        });
+        window.addEventListener('keydown', this.handleKeyDown.bind(this));
+        window.addEventListener('keyup', this.handleKeyUp.bind(this));
         
-        window.addEventListener('keyup', (e) => {
-            switch(e.key) {
-                case 'ArrowLeft':
-                    this.keys.left = false;
-                    break;
-                case 'ArrowRight':
-                    this.keys.right = false;
-                    break;
-                case 'ArrowUp':
-                case ' ':
-                    this.keys.up = false;
-                    break;
-                case 'r':
-                case 'R':
-                    this.keys.restart = false;
-                    break;
-            }
-        });
-        
-        // Touch event listeners
-        window.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent scrolling
-            this.touchStartX = e.touches[0].clientX;
-            this.touchStartY = e.touches[0].clientY;
-            this.keys.up = true; // Jump on touch
-        });
-        
-        window.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touchX = e.touches[0].clientX;
-            const touchY = e.touches[0].clientY;
-            
-            // Calculate touch movement
-            const deltaX = touchX - this.touchStartX;
-            
-            // Update movement based on touch
-            this.keys.left = deltaX < -20;
-            this.keys.right = deltaX > 20;
-            
-            // Update touch start position for next move
-            this.touchStartX = touchX;
-            this.touchStartY = touchY;
-        });
-        
-        window.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.keys.up = false;
-            this.keys.left = false;
-            this.keys.right = false;
-        });
+        // Touch events
+        window.addEventListener('touchstart', this.handleTouchStart.bind(this));
+        window.addEventListener('touchend', this.handleTouchEnd.bind(this));
+        window.addEventListener('touchmove', this.handleTouchMove.bind(this));
         
         // Gyroscope event listener
         if (window.DeviceOrientationEvent) {
@@ -113,6 +53,92 @@ export class InputHandler {
         
         // Prevent scrolling on touch devices
         document.body.style.touchAction = 'none';
+    }
+    
+    handleTouchStart(e) {
+        this.touchStartX = e.touches[0].clientX;
+        this.touchStartY = e.touches[0].clientY;
+    }
+    
+    handleTouchEnd(e) {
+        this.touchEndX = e.changedTouches[0].clientX;
+        this.touchEndY = e.changedTouches[0].clientY;
+        
+        // Calculate swipe direction
+        const dx = this.touchEndX - this.touchStartX;
+        const dy = this.touchEndY - this.touchStartY;
+        
+        // Determine if it's a horizontal or vertical swipe
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal swipe
+            if (dx > 0) {
+                this.keys.right = true;
+                this.keys.left = false;
+            } else {
+                this.keys.left = true;
+                this.keys.right = false;
+            }
+        } else {
+            // Vertical swipe
+            if (dy < 0) {
+                this.keys.up = true;
+            }
+        }
+        
+        // Reset keys after a short delay
+        setTimeout(() => {
+            this.keys.up = false;
+            this.keys.left = false;
+            this.keys.right = false;
+        }, 100);
+    }
+    
+    handleTouchMove(e) {
+        e.preventDefault(); // Prevent scrolling
+    }
+    
+    handleKeyDown(e) {
+        switch(e.key) {
+            case 'ArrowLeft':
+            case 'a':
+                this.keys.left = true;
+                break;
+            case 'ArrowRight':
+            case 'd':
+                this.keys.right = true;
+                break;
+            case 'ArrowUp':
+            case 'w':
+            case ' ':
+                this.keys.up = true;
+                break;
+            case 'r':
+            case 'R':
+                this.keys.restart = true;
+                break;
+        }
+    }
+    
+    handleKeyUp(e) {
+        switch(e.key) {
+            case 'ArrowLeft':
+            case 'a':
+                this.keys.left = false;
+                break;
+            case 'ArrowRight':
+            case 'd':
+                this.keys.right = false;
+                break;
+            case 'ArrowUp':
+            case 'w':
+            case ' ':
+                this.keys.up = false;
+                break;
+            case 'r':
+            case 'R':
+                this.keys.restart = false;
+                break;
+        }
     }
     
     isKeyPressed(key) {

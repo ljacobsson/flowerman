@@ -52,21 +52,10 @@ export class Player {
         this.currentState = 'dying';
         this.velocityX = 0;
         this.velocityY = -5; // Small upward bounce
+        this.dyingRotation = 0;
     }
     
     update() {
-        if (this.isDying) {
-            this.dyingRotation += 0.2;
-            this.dyingScale -= 0.02;
-            this.velocityY += this.game.gravity;
-            this.y += this.velocityY;
-            
-            if (this.dyingScale <= 0) {
-                this.dyingScale = 0;
-            }
-            return;
-        }
-        
         // Handle input
         if (this.game.inputHandler.keys.right) {
             this.velocityX = this.speed;
