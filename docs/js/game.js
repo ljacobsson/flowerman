@@ -30,6 +30,9 @@ export class Game {
         this.level = 1;
         this.gameState = 'splash'; // 'splash', 'playing', 'completed', 'gameOver'
         
+        // Load high score from localStorage
+        this.highScore = parseInt(localStorage.getItem('highScore')) || 0;
+        
         // Splash screen properties
         this.splashOpacity = 1;
         this.splashFadeSpeed = 0.02;
@@ -151,7 +154,7 @@ export class Game {
                     if (this.checkCollision(this.player, star)) {
                         star.collected = true;
                         this.player.addFlower(star);
-                        this.score += 1;
+                        this.updateScore(this.score + 1);
                         
                         if (this.stars.every(star => star.collected)) {
                             this.gameState = 'completed';
@@ -294,9 +297,9 @@ export class Game {
         // Add padding from the top
         const padding = 20;
         
-        // Draw score and level centered at the top
-        this.ctx.fillText(`Flowers: ${this.score}`, this.width/2, padding + 20);
-        this.ctx.fillText(`Level: ${this.level}`, this.width/2, padding + 50);
+        // Draw all stats on one line
+        this.ctx.fillText(`Level: ${this.level} | Flowers: ${this.score} | High Score: ${this.highScore}`, 
+                         this.width/2, padding + 30);
         
         if (this.gameState === 'completed') {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -317,7 +320,7 @@ export class Game {
             this.ctx.textAlign = 'center';
             this.ctx.fillText(this.gameState === 'dying' ? 'Ouch!' : 'Game Over!', this.width/2, this.height/2);
             this.ctx.font = '24px Arial';
-            this.ctx.fillText('Press screen to restart', this.width/2, this.height/2 + 40);
+            this.ctx.fillText('Press R to restart', this.width/2, this.height/2 + 40);
         }
     }
     
@@ -326,7 +329,6 @@ export class Game {
         this.level = 1;
         this.gameState = 'playing';
         this.generateInitialLevel();
-        this.player.reset();
     }
     
     gameLoop() {
@@ -353,5 +355,13 @@ export class Game {
                 }, 2000); // Pan for 2 seconds
             }
         }, 16); // ~60fps
+    }
+    
+    updateScore(newScore) {
+        this.score = newScore;
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem('highScore', this.highScore);
+        }
     }
 } 

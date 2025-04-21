@@ -7,7 +7,14 @@ export class InputHandler {
             restart: false
         };
         
-        // Keyboard controls
+        this.touchStartX = 0;
+        this.touchStartY = 0;
+        this.gyroX = 0;
+        this.gyroY = 0;
+        this.gyroSmoothing = 0.1; // Smoothing factor for gyro input
+        this.gyroMultiplier = 0.2; // Reduced sensitivity multiplier
+        
+        // Keyboard event listeners
         window.addEventListener('keydown', (e) => {
             switch(e.key) {
                 case 'ArrowLeft':
@@ -45,53 +52,78 @@ export class InputHandler {
                     break;
             }
         });
-
-        // Mobile controls
-        this.gyroEnabled = false;
-        this.gyroX = 0;
-        this.gyroThreshold = 0.1; // Sensitivity threshold for gyroscope
-
-        // Request permission for device orientation
+        
+        // Touch event listeners
+        window.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent scrolling
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+            this.keys.up = true; // Jump on touch
+        });
+        
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            
+            // Calculate touch movement
+            const deltaX = touchX - this.touchStartX;
+            
+            // Update movement based on touch
+            this.keys.left = deltaX < -20;
+            this.keys.right = deltaX > 20;
+            
+            // Update touch start position for next move
+            this.touchStartX = touchX;
+            this.touchStartY = touchY;
+        });
+        
+        window.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys.up = false;
+            this.keys.left = false;
+            this.keys.right = false;
+        });
+        
+        // Gyroscope event listener
         if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (event) => {
-                if (this.gyroEnabled) {
-                    // Normalize gamma (left/right tilt) to -1 to 1 range
-                    this.gyroX = Math.max(-1, Math.min(1, event.gamma / 90));
-                    
-                    // Update movement based on tilt
-                    this.keys.left = this.gyroX < -this.gyroThreshold;
-                    this.keys.right = this.gyroX > this.gyroThreshold;
-                }
+            window.addEventListener('deviceorientation', (e) => {
+                // Smooth the gyro input
+                this.gyroX = this.gyroX * (1 - this.gyroSmoothing) + 
+                            (e.gamma * this.gyroMultiplier) * this.gyroSmoothing;
+                
+                // Update movement based on tilt
+                this.keys.left = this.gyroX < -0.2;
+                this.keys.right = this.gyroX > 0.2;
             });
-
+            
             // Request permission for iOS 13+
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 document.body.addEventListener('click', () => {
                     DeviceOrientationEvent.requestPermission()
                         .then(permissionState => {
                             if (permissionState === 'granted') {
-                                this.gyroEnabled = true;
+                                // Permission granted
                             }
                         })
                         .catch(console.error);
                 }, { once: true });
-            } else {
-                this.gyroEnabled = true;
             }
         }
-
-        // Touch controls for jumping
-        window.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent scrolling
-            this.keys.up = true;
-        });
-
-        window.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.keys.up = false;
-        });
-
+        
         // Prevent scrolling on touch devices
         document.body.style.touchAction = 'none';
+    }
+    
+    isKeyPressed(key) {
+        return this.keys[key] || false;
+    }
+    
+    getGyroX() {
+        return this.gyroX;
+    }
+    
+    getGyroY() {
+        return this.gyroY;
     }
 } 
