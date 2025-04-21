@@ -14,8 +14,8 @@ export class InputHandler {
         this.touchEndY = 0;
         this.gyroX = 0;
         this.gyroY = 0;
-        this.gyroSmoothing = 0.1; // Smoothing factor for gyro input
-        this.gyroMultiplier = 0.1; // Reduced sensitivity multiplier
+        this.gyroSmoothing = 0.2; // Increased smoothing for slower response
+        this.gyroMultiplier = 0.05; // Reduced multiplier for less sensitivity
         
         // Keyboard event listeners
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
@@ -29,13 +29,13 @@ export class InputHandler {
         // Gyroscope event listener
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', (e) => {
-                // Smooth the gyro input
+                // Smooth the gyro input with increased smoothing
                 this.gyroX = this.gyroX * (1 - this.gyroSmoothing) + 
                             (e.gamma * this.gyroMultiplier) * this.gyroSmoothing;
                 
-                // Update movement based on tilt
-                this.keys.left = this.gyroX < -0.2;
-                this.keys.right = this.gyroX > 0.2;
+                // Update movement based on tilt with increased threshold
+                this.keys.left = this.gyroX < -0.3;
+                this.keys.right = this.gyroX > 0.3;
             });
             
             // Request permission for iOS 13+
