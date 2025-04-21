@@ -1,6 +1,8 @@
 import { Player } from './player.js';
 import { LevelGenerator } from './levelGenerator.js';
 import { InputHandler } from './inputHandler.js';
+import { Cloud } from './cloud.js';
+import { Sun } from './sun.js';
 
 export class Game {
     constructor(canvas) {
@@ -32,6 +34,14 @@ export class Game {
         this.fireAnimationFrame = 0;
         this.fireHeight = 40; // Height of the fire effect
         this.fireOffset = 100; // Distance below lowest platform
+        
+        // Cloud properties
+        this.clouds = [];
+        this.maxClouds = 5;
+        this.generateClouds();
+        
+        // Add sun
+        this.sun = new Sun(this);
         
         this.generateInitialLevel();
     }
@@ -67,10 +77,23 @@ export class Game {
         this.player.velocityY = 0;
     }
     
+    generateClouds() {
+        // Create initial clouds
+        for (let i = 0; i < this.maxClouds; i++) {
+            this.clouds.push(new Cloud(this));
+            // Stagger the initial positions
+            this.clouds[i].x = Math.random() * this.width - this.clouds[i].width;
+        }
+    }
+    
     update() {
         if (this.gameState === 'playing') {
             this.player.update();
             this.updateCamera();
+            
+            // Update clouds and sun
+            this.clouds.forEach(cloud => cloud.update());
+            this.sun.update();
             
             // Check for death by falling into fire
             const lowestPlatform = Math.max(...this.platforms.map(p => p.y));
@@ -156,6 +179,10 @@ export class Game {
         // Clear canvas
         this.ctx.fillStyle = '#87CEEB';
         this.ctx.fillRect(0, 0, this.width, this.height);
+        
+        // Draw sun and clouds first (before any camera transformations)
+        this.sun.draw(this.ctx);
+        this.clouds.forEach(cloud => cloud.draw(this.ctx));
         
         // Draw fire first (before any camera transformations)
         this.updateFire();
