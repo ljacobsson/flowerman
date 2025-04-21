@@ -195,6 +195,29 @@ export class Player {
         ctx.arc(noseX, this.y - 10, 4, 0, Math.PI * 2);
         ctx.fill();
         
+        // Draw smile that grows with collected flowers
+        if (!this.isDying) {
+            ctx.strokeStyle = '#FF0000';
+            ctx.lineWidth = 3;
+            const baseWidth = 8;
+            const baseHeight = 3;
+            const flowerBonus = this.collectedFlowers.length * 2; // Each flower adds 2 pixels to width and 0.5 to height
+            
+            ctx.beginPath();
+            const smileX = this.x + this.width/2;
+            const smileY = this.y - 3;
+            const smileWidth = baseWidth + flowerBonus;
+            const smileHeight = baseHeight + (flowerBonus * 0.25);
+            
+            // Draw curved smile
+            ctx.moveTo(smileX - smileWidth/2, smileY);
+            ctx.quadraticCurveTo(
+                smileX, smileY + smileHeight,
+                smileX + smileWidth/2, smileY
+            );
+            ctx.stroke();
+        }
+        
         // Draw hair/hat
         ctx.fillStyle = '#8B4513'; // Brown hair
         // Draw the hat brim
@@ -277,7 +300,9 @@ export class Player {
                 } else {
                     // Multiple flowers spread out
                     const maxSpread = Math.PI / 4; // 45 degrees max spread
-                    angle = (index / (totalFlowers - 1)) * maxSpread - maxSpread/2;
+                    // Invert the angle calculation when facing left
+                    const baseAngle = (index / (totalFlowers - 1)) * maxSpread - maxSpread/2;
+                    angle = this.isFacingRight ? baseAngle : -baseAngle;
                 }
                 
                 // Calculate stem length and position

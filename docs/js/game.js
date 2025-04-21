@@ -86,7 +86,7 @@ export class Game {
                     if (this.checkCollision(this.player, star)) {
                         star.collected = true;
                         this.player.addFlower(star);
-                        this.score += 10;
+                        this.score += 1;
                         
                         if (this.stars.every(star => star.collected)) {
                             this.gameState = 'completed';
@@ -221,7 +221,7 @@ export class Game {
         const padding = 20;
         
         // Draw score and level with proper padding
-        this.ctx.fillText(`Score: ${this.score}`, padding, padding + 20);
+        this.ctx.fillText(`Flowers: ${this.score}`, padding, padding + 20);
         this.ctx.fillText(`Level: ${this.level}`, padding, padding + 50);
         
         if (this.gameState === 'completed') {
