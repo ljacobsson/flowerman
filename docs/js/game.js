@@ -15,7 +15,7 @@ export class Game {
         // Handle window resize
         window.addEventListener('resize', () => this.resizeCanvas());
         
-        this.inputHandler = new InputHandler();
+        this.inputHandler = new InputHandler(this);
         this.player = new Player(this);
         this.levelGenerator = new LevelGenerator(this);
         
