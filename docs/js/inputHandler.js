@@ -17,13 +17,19 @@ export class InputHandler {
             this.keys[e.key] = false;
         });
         
+        // Mouse click event for desktop
+        window.addEventListener('click', (e) => {
+            this.game.handleClick(e.clientX, e.clientY);
+        });
+        
         // Touch events
         window.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             this.touchStartX = e.touches[0].clientX;
             this.touchStartY = e.touches[0].clientY;
             
-            // Handle leaderboard input click
-            this.game.handleClick(e.touches[0].clientX, e.touches[0].clientY);
+            // Call game's handleClick method
+            this.game.handleClick(this.touchStartX, this.touchStartY);
         });
         
         window.addEventListener('touchmove', (e) => {
