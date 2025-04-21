@@ -64,4 +64,23 @@ export class InputHandler {
             });
         }
     }
+
+    handleDeviceMotion(e) {
+        if (!this.game.isMobile) return;
+        
+        // Reduce sensitivity by using a smaller multiplier
+        const sensitivity = 0.1; // Reduced from 0.2
+        const tilt = e.gamma * sensitivity;
+        
+        // Add a small dead zone in the center
+        const deadZone = 5;
+        
+        if (tilt < -deadZone) {
+            this.game.player.move('left');
+        } else if (tilt > deadZone) {
+            this.game.player.move('right');
+        } else {
+            this.game.player.move('stop');
+        }
+    }
 } 
