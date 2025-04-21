@@ -56,41 +56,50 @@ export class InputHandler {
     }
     
     handleTouchStart(e) {
-        e.preventDefault(); // Prevent scrolling
-        this.touchStartX = e.touches[0].clientX;
-        this.touchStartY = e.touches[0].clientY;
-        this.keys.up = true; // Jump on tap
+        // Only prevent scrolling during gameplay
+        if (this.game.gameState === 'playing' || this.game.gameState === 'panning') {
+            e.preventDefault();
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+            this.keys.up = true; // Jump on tap
+        }
     }
     
     handleTouchEnd(e) {
-        e.preventDefault();
-        this.touchEndX = e.changedTouches[0].clientX;
-        this.touchEndY = e.changedTouches[0].clientY;
-        
-        // Calculate swipe direction
-        const dx = this.touchEndX - this.touchStartX;
-        
-        // Only handle horizontal movement
-        if (Math.abs(dx) > 20) {
-            if (dx > 0) {
-                this.keys.right = true;
-                this.keys.left = false;
-            } else {
-                this.keys.left = true;
-                this.keys.right = false;
+        // Only prevent scrolling during gameplay
+        if (this.game.gameState === 'playing' || this.game.gameState === 'panning') {
+            e.preventDefault();
+            this.touchEndX = e.changedTouches[0].clientX;
+            this.touchEndY = e.changedTouches[0].clientY;
+            
+            // Calculate swipe direction
+            const dx = this.touchEndX - this.touchStartX;
+            
+            // Only handle horizontal movement
+            if (Math.abs(dx) > 20) {
+                if (dx > 0) {
+                    this.keys.right = true;
+                    this.keys.left = false;
+                } else {
+                    this.keys.left = true;
+                    this.keys.right = false;
+                }
             }
+            
+            // Reset keys after a short delay
+            setTimeout(() => {
+                this.keys.up = false;
+                this.keys.left = false;
+                this.keys.right = false;
+            }, 100);
         }
-        
-        // Reset keys after a short delay
-        setTimeout(() => {
-            this.keys.up = false;
-            this.keys.left = false;
-            this.keys.right = false;
-        }, 100);
     }
     
     handleTouchMove(e) {
-        e.preventDefault(); // Prevent scrolling
+        // Only prevent scrolling during gameplay
+        if (this.game.gameState === 'playing' || this.game.gameState === 'panning') {
+            e.preventDefault();
+        }
     }
     
     handleKeyDown(e) {
