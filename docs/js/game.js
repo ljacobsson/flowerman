@@ -6,8 +6,12 @@ export class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        this.width = canvas.width;
-        this.height = canvas.height;
+        
+        // Set initial canvas size
+        this.resizeCanvas();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => this.resizeCanvas());
         
         this.inputHandler = new InputHandler();
         this.player = new Player(this);
@@ -32,30 +36,35 @@ export class Game {
         this.generateInitialLevel();
     }
     
+    resizeCanvas() {
+        // Set canvas size to window size
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        
+        // Update game properties
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+        
+        // Adjust player position if needed
+        if (this.player) {
+            this.player.x = Math.min(this.player.x, this.width - this.player.width);
+            this.player.y = Math.min(this.player.y, this.height - this.player.height);
+        }
+    }
+    
     generateInitialLevel() {
-        const levelData = this.levelGenerator.generateLevel();
+        const levelData = this.levelGenerator.generateLevel(this.level);
         this.platforms = levelData.platforms;
         this.stars = levelData.stars;
         
         // Reset player's collected flowers
         this.player.collectedFlowers = [];
         
-        // Find the first platform to place the player on
-        const startingPlatform = this.platforms.find(p => p.x <= 100 && p.x + p.width >= 100);
-        if (startingPlatform) {
-            // Position player on top of the platform
-            this.player.x = 100;
-            this.player.y = startingPlatform.y - this.player.height;
-        } else {
-            // Fallback position if no suitable platform is found
-            this.player.x = 100;
-            this.player.y = this.height - 150;
-        }
-        
-        // Reset player state
-        this.player.velocityX = 0;
+        // Position player on the starting platform
+        const startPlatform = this.platforms[0]; // First platform is always the starting platform
+        this.player.x = startPlatform.x + startPlatform.width/2 - this.player.width/2;
+        this.player.y = startPlatform.y - this.player.height;
         this.player.velocityY = 0;
-        this.player.isJumping = false;
     }
     
     update() {

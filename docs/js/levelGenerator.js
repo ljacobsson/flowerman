@@ -7,57 +7,71 @@ export class LevelGenerator {
         this.platformHeight = 20;
         this.minGap = 50;
         this.maxGap = 150;
-        this.minHeight = 50;
-        this.maxHeight = 200;
-        this.maxJumpHeight = 200;
+        this.minHeight = 100;
+        this.maxHeight = 300;
     }
     
-    generateLevel() {
+    generateLevel(level) {
         const platforms = [];
         const stars = [];
-        let currentX = 0;
+        let currentX = 50;
         let currentY = this.game.height - 100;
         
-        // Create ground platform
-        platforms.push({
-            x: 0,
-            y: this.game.height - 20,
-            width: this.game.width * 2,
+        // Always create a starting platform
+        const startPlatform = {
+            x: 50,
+            y: this.game.height - 150,
+            width: this.platformWidth,
             height: this.platformHeight
-        });
+        };
+        platforms.push(startPlatform);
+        
+        // Add a flower to the starting platform
+        stars.push(new Star(
+            startPlatform.x + startPlatform.width/2 - 10,
+            startPlatform.y - 30
+        ));
+        
+        // Only create ground platform in early levels
+        if (level <= 2) {
+            platforms.push({
+                x: 0,
+                y: this.game.height - 20,
+                width: this.game.width * 2,
+                height: this.platformHeight
+            });
+        }
         
         // Generate platforms with guaranteed path
-        const levelLength = this.game.width * 2;
-        const platformCount = Math.floor(levelLength / (this.platformWidth + this.minGap));
+        const numPlatforms = Math.floor(this.game.width / 100) + level * 3;
         
         // Create a main path with alternating platforms
-        for (let i = 0; i < platformCount; i++) {
-            // Calculate next platform position
-            const gap = this.getRandomInt(this.minGap, this.maxGap);
-            const heightChange = this.getRandomInt(-this.maxJumpHeight/2, this.maxJumpHeight/2);
+        for (let i = 0; i < numPlatforms; i++) {
+            const gap = this.minGap + Math.random() * (this.maxGap - this.minGap);
+            const height = this.minHeight + Math.random() * (this.maxHeight - this.minHeight);
             
-            // Ensure the next platform is reachable
-            const nextY = Math.max(
+            currentX += gap;
+            currentY = Math.max(
                 this.game.height - this.maxHeight,
                 Math.min(
-                    this.game.height - 100,
-                    currentY + heightChange
+                    this.game.height - this.minHeight,
+                    currentY + (Math.random() > 0.5 ? height : -height)
                 )
             );
             
             // Create platform
             const platform = {
-                x: currentX + gap,
-                y: nextY,
+                x: currentX,
+                y: currentY,
                 width: this.platformWidth,
                 height: this.platformHeight
             };
             platforms.push(platform);
             
-            // Add stars on every other platform
-            if (i % 2 === 0) {
+            // Add stars on every third platform to spread them out
+            if (i % 3 === 0 && stars.length < 10) {
                 const starCount = this.getRandomInt(1, 2);
-                for (let j = 0; j < starCount; j++) {
+                for (let j = 0; j < starCount && stars.length < 10; j++) {
                     stars.push(new Star(
                         platform.x + (platform.width / (starCount + 1)) * (j + 1) - 10,
                         platform.y - 30
@@ -65,11 +79,8 @@ export class LevelGenerator {
                 }
             }
             
-            currentX += gap + this.platformWidth;
-            currentY = nextY;
-            
-            // Occasionally create a side platform for additional stars
-            if (Math.random() < 0.3 && i > 0 && i < platformCount - 1) {
+            // Add side platforms for additional stars, but less frequently
+            if (Math.random() < 0.3 && i > 0 && i < numPlatforms - 1 && stars.length < 10) {
                 const sidePlatform = {
                     x: platform.x + this.platformWidth + 50,
                     y: platform.y - this.getRandomInt(50, 100),
@@ -78,15 +89,17 @@ export class LevelGenerator {
                 };
                 platforms.push(sidePlatform);
                 
-                // Add a star to the side platform
-                stars.push(new Star(
-                    sidePlatform.x + sidePlatform.width/2 - 10,
-                    sidePlatform.y - 30
-                ));
+                // Add a single star to side platforms
+                if (stars.length < 10) {
+                    stars.push(new Star(
+                        sidePlatform.x + sidePlatform.width/2 - 10,
+                        sidePlatform.y - 30
+                    ));
+                }
             }
         }
         
-        // Add final platform with special star
+        // Add final platform with special stars
         const finalPlatform = {
             x: currentX + 50,
             y: currentY - 50,
@@ -95,13 +108,43 @@ export class LevelGenerator {
         };
         platforms.push(finalPlatform);
         
-        // Add special final star
-        stars.push(new Star(
-            finalPlatform.x + finalPlatform.width/2 - 10,
-            finalPlatform.y - 30
-        ));
+        // Add final stars if we haven't reached 10 yet
+        const remainingStars = 10 - stars.length;
+        if (remainingStars > 0) {
+            const finalStarCount = Math.min(remainingStars, 3);
+            for (let i = 0; i < finalStarCount; i++) {
+                stars.push(new Star(
+                    finalPlatform.x + (finalPlatform.width / (finalStarCount + 1)) * (i + 1) - 10,
+                    finalPlatform.y - 30
+                ));
+            }
+        }
+        
+        // Ensure we have exactly 10 flowers, spread out on random platforms
+        while (stars.length < 10) {
+            // Choose a random platform that doesn't already have a star
+            let randomPlatform;
+            let attempts = 0;
+            do {
+                randomPlatform = platforms[this.getRandomInt(0, platforms.length - 1)];
+                attempts++;
+            } while (this.platformHasStar(randomPlatform, stars) && attempts < 10);
+            
+            stars.push(new Star(
+                randomPlatform.x + randomPlatform.width/2 - 10,
+                randomPlatform.y - 30
+            ));
+        }
         
         return { platforms, stars };
+    }
+    
+    platformHasStar(platform, stars) {
+        return stars.some(star => 
+            star.x >= platform.x && 
+            star.x <= platform.x + platform.width &&
+            Math.abs(star.y - (platform.y - 30)) < 10
+        );
     }
     
     getRandomInt(min, max) {
