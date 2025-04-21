@@ -56,32 +56,28 @@ export class InputHandler {
     }
     
     handleTouchStart(e) {
+        e.preventDefault(); // Prevent scrolling
         this.touchStartX = e.touches[0].clientX;
         this.touchStartY = e.touches[0].clientY;
+        this.keys.up = true; // Jump on tap
     }
     
     handleTouchEnd(e) {
+        e.preventDefault();
         this.touchEndX = e.changedTouches[0].clientX;
         this.touchEndY = e.changedTouches[0].clientY;
         
         // Calculate swipe direction
         const dx = this.touchEndX - this.touchStartX;
-        const dy = this.touchEndY - this.touchStartY;
         
-        // Determine if it's a horizontal or vertical swipe
-        if (Math.abs(dx) > Math.abs(dy)) {
-            // Horizontal swipe
+        // Only handle horizontal movement
+        if (Math.abs(dx) > 20) {
             if (dx > 0) {
                 this.keys.right = true;
                 this.keys.left = false;
             } else {
                 this.keys.left = true;
                 this.keys.right = false;
-            }
-        } else {
-            // Vertical swipe
-            if (dy < 0) {
-                this.keys.up = true;
             }
         }
         
@@ -151,5 +147,22 @@ export class InputHandler {
     
     getGyroY() {
         return this.gyroY;
+    }
+    
+    handleDeviceMotion(e) {
+        if (!e.accelerationIncludingGravity) return;
+        
+        const x = e.accelerationIncludingGravity.x;
+        
+        // Reduce gyroscope sensitivity
+        const gyroMultiplier = 0.05; // Reduced from 0.1
+        const gyroSmoothing = 0.2; // Increased from 0.1
+        
+        // Calculate tilt with reduced sensitivity
+        const tilt = x * gyroMultiplier;
+        
+        // Apply smoothing with increased threshold
+        this.keys.left = tilt < -gyroSmoothing;
+        this.keys.right = tilt > gyroSmoothing;
     }
 } 
