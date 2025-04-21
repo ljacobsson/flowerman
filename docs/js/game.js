@@ -28,6 +28,16 @@ export class Game {
         this.score = 0;
         this.level = 1;
         this.gameState = 'playing'; // 'playing', 'completed', 'gameOver'
+        this.showSplash = true; // Add flag to control splash screen
+        
+        // Check if device is mobile
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Leaderboard properties
+        this.leaderboard = [];
+        this.playerName = '';
+        this.showNameInput = false;
+        this.nameInput = '';
         
         // Fire properties
         this.fireParticles = [];
@@ -44,6 +54,9 @@ export class Game {
         this.sun = new Sun(this);
         
         this.generateInitialLevel();
+        
+        // Load leaderboard
+        this.loadLeaderboard();
     }
     
     resizeCanvas() {
@@ -94,6 +107,11 @@ export class Game {
             // Update clouds and sun
             this.clouds.forEach(cloud => cloud.update());
             this.sun.update();
+            
+            // Hide splash screen when player moves
+            if (this.showSplash && (this.player.velocityX !== 0 || this.player.velocityY !== 0)) {
+                this.showSplash = false;
+            }
             
             // Check for death by falling into fire
             const lowestPlatform = Math.max(...this.platforms.map(p => p.y));
@@ -260,26 +278,85 @@ export class Game {
         this.ctx.fillText(`Flowers: ${this.score}`, this.width/2, padding + 20);
         this.ctx.fillText(`Level: ${this.level}`, this.width/2, padding + 50);
         
-        if (this.gameState === 'completed') {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        // Show splash screen for level 1
+        if (this.level === 1 && this.showSplash) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.fillRect(0, 0, this.width, this.height);
             
             this.ctx.fillStyle = 'white';
             this.ctx.font = '48px Arial';
-            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Pick all the flowers!', this.width/2, this.height/2);
+            this.ctx.font = '24px Arial';
+            
+            // Show different controls based on device type
+            if (this.isMobile) {
+                this.ctx.fillText('Tilt your phone to move', this.width/2, this.height/2 + 50);
+                this.ctx.fillText('Tap screen to jump', this.width/2, this.height/2 + 80);
+            } else {
+                this.ctx.fillText('Use arrow keys to move', this.width/2, this.height/2 + 50);
+                this.ctx.fillText('Press space to jump', this.width/2, this.height/2 + 80);
+            }
+        }
+        
+        if (this.gameState === 'completed') {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = '48px Arial';
             this.ctx.fillText('Level Complete!', this.width/2, this.height/2);
             this.ctx.font = '24px Arial';
             this.ctx.fillText('Loading next level...', this.width/2, this.height/2 + 40);
         } else if (this.gameState === 'dying' || this.gameState === 'gameOver') {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.fillRect(0, 0, this.width, this.height);
             
             this.ctx.fillStyle = 'white';
             this.ctx.font = '48px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.gameState === 'dying' ? 'Ouch!' : 'Game Over!', this.width/2, this.height/2);
-            this.ctx.font = '24px Arial';
-            this.ctx.fillText('Press screen to restart', this.width/2, this.height/2 + 40);
+            this.ctx.fillText(this.gameState === 'dying' ? 'Ouch!' : 'Game Over!', this.width/2, this.height/2 - 100);
+            
+            if (this.showNameInput) {
+                // Draw name input
+                this.ctx.font = '24px Arial';
+                this.ctx.fillText('Enter your name:', this.width/2, this.height/2);
+                
+                // Draw input box
+                this.ctx.fillStyle = 'white';
+                this.ctx.strokeStyle = 'white';
+                this.ctx.lineWidth = 2;
+                const inputWidth = 200;
+                const inputHeight = 40;
+                const inputX = this.width/2 - inputWidth/2;
+                const inputY = this.height/2 + 30;
+                this.ctx.strokeRect(inputX, inputY, inputWidth, inputHeight);
+                
+                // Draw current input
+                this.ctx.fillText(this.nameInput || 'Type here...', this.width/2, inputY + inputHeight/2 + 8);
+                
+                // Draw submit button
+                this.ctx.fillStyle = '#4CAF50';
+                this.ctx.fillRect(inputX, inputY + inputHeight + 20, inputWidth, 40);
+                this.ctx.fillStyle = 'white';
+                this.ctx.fillText('Submit', this.width/2, inputY + inputHeight + 45);
+            } else {
+                // Draw leaderboard
+                this.ctx.font = '24px Arial';
+                this.ctx.fillText('Leaderboard', this.width/2, this.height/2);
+                
+                // Draw top 5 scores
+                this.ctx.font = '20px Arial';
+                for (let i = 0; i < Math.min(5, this.leaderboard.length); i++) {
+                    const entry = this.leaderboard[i];
+                    this.ctx.fillText(
+                        `${i + 1}. ${entry.name} - ${entry.score} flowers (Level ${entry.level})`,
+                        this.width/2,
+                        this.height/2 + 50 + i * 30
+                    );
+                }
+                
+                // Draw restart prompt
+                this.ctx.fillText('Press R to restart', this.width/2, this.height/2 + 250);
+            }
         }
     }
     
@@ -287,6 +364,9 @@ export class Game {
         this.score = 0;
         this.level = 1;
         this.gameState = 'playing';
+        this.showSplash = true;
+        this.showNameInput = true;
+        this.nameInput = '';
         this.generateInitialLevel();
         this.player.reset();
     }
@@ -301,4 +381,68 @@ export class Game {
         this.gameLoop();
     }
 
+    async loadLeaderboard() {
+        try {
+            const response = await fetch('YOUR_GET_LEADERBOARD_URL');
+            const data = await response.json();
+            this.leaderboard = data;
+        } catch (error) {
+            console.error('Failed to load leaderboard:', error);
+        }
+    }
+
+    async submitScore() {
+        if (!this.playerName) return;
+        
+        try {
+            const response = await fetch('YOUR_PUT_LEADERBOARD_URL', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: this.playerName,
+                    score: this.score,
+                    level: this.level
+                })
+            });
+            
+            if (response.ok) {
+                await this.loadLeaderboard();
+            }
+        } catch (error) {
+            console.error('Failed to submit score:', error);
+        }
+    }
+
+    handleKeyDown(e) {
+        if (this.gameState === 'gameOver' && this.showNameInput) {
+            if (e.key === 'Enter') {
+                this.playerName = this.nameInput;
+                this.showNameInput = false;
+                this.submitScore();
+            } else if (e.key === 'Backspace') {
+                this.nameInput = this.nameInput.slice(0, -1);
+            } else if (e.key.length === 1 && this.nameInput.length < 20) {
+                this.nameInput += e.key;
+            }
+        }
+    }
+
+    handleClick(x, y) {
+        if (this.gameState === 'gameOver' && this.showNameInput) {
+            const inputWidth = 200;
+            const inputHeight = 40;
+            const inputX = this.width/2 - inputWidth/2;
+            const inputY = this.height/2 + 30;
+            
+            // Check if submit button was clicked
+            if (x >= inputX && x <= inputX + inputWidth &&
+                y >= inputY + inputHeight + 20 && y <= inputY + inputHeight + 60) {
+                this.playerName = this.nameInput;
+                this.showNameInput = false;
+                this.submitScore();
+            }
+        }
+    }
 } 

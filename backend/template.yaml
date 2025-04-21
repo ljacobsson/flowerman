@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Leaderboard API for the flower collecting game
+
+Resources:
+  LeaderboardTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: FlowerGameLeaderboard
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: score
+          AttributeType: N
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ScoreIndex
+          KeySchema:
+            - AttributeName: score
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  GetLeaderboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: getLeaderboard.handler
+      Runtime: nodejs18.x
+      Architectures:
+        - arm64
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref LeaderboardTable
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref LeaderboardTable
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - "*"
+          AllowMethods:
+            - GET
+          AllowHeaders:
+            - "*"
+
+  PutLeaderboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: putLeaderboard.handler
+      Runtime: nodejs18.x
+      Architectures:
+        - arm64
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref LeaderboardTable
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref LeaderboardTable
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - "*"
+          AllowMethods:
+            - POST
+          AllowHeaders:
+            - "*"
+
+Outputs:
+  GetLeaderboardUrl:
+    Description: URL for GetLeaderboard function
+    Value: !GetAtt GetLeaderboardFunction.FunctionUrl
+  PutLeaderboardUrl:
+    Description: URL for PutLeaderboard function
+    Value: !GetAtt PutLeaderboardFunction.FunctionUrl 

@@ -5,7 +5,7 @@ export class Cloud {
         this.height = this.width * 0.5; // Height is half of width
         this.x = -this.width; // Start off-screen to the left
         this.y = Math.random() * (this.game.height * 0.4); // Random height in top 40% of screen
-        this.speed = Math.random() * 0.5 + 0.2; // Random speed between 0.2 and 0.7
+        this.speed = Math.random() * 0.2 + 0.1; // Random speed between 0.1 and 0.3 (slower)
         
         // Generate random cloud segments
         this.segments = [];
