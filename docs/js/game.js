@@ -279,7 +279,7 @@ export class Game {
             this.ctx.textAlign = 'center';
             this.ctx.fillText(this.gameState === 'dying' ? 'Ouch!' : 'Game Over!', this.width/2, this.height/2);
             this.ctx.font = '24px Arial';
-            this.ctx.fillText('Press R to restart', this.width/2, this.height/2 + 40);
+            this.ctx.fillText('Press screen to restart', this.width/2, this.height/2 + 40);
         }
     }
     
