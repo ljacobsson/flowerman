@@ -160,21 +160,4 @@ export class InputHandler {
     getGyroY() {
         return this.gyroY;
     }
-    
-    handleDeviceMotion(e) {
-        if (!e.accelerationIncludingGravity) return;
-        
-        const x = e.accelerationIncludingGravity.x;
-        
-        // Reduce gyroscope sensitivity
-        const gyroMultiplier = 0.05; // Reduced from 0.1
-        const gyroSmoothing = 0.2; // Increased from 0.1
-        
-        // Calculate tilt with reduced sensitivity
-        const tilt = x * gyroMultiplier;
-        
-        // Apply smoothing with increased threshold
-        this.keys.left = tilt < -gyroSmoothing;
-        this.keys.right = tilt > gyroSmoothing;
-    }
 } 
