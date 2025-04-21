@@ -14,8 +14,8 @@ export class InputHandler {
         this.touchEndY = 0;
         this.gyroX = 0;
         this.gyroY = 0;
-        this.gyroSmoothing = 0.01; // Smoothing factor for gyro input
-        this.gyroMultiplier = 0.01; // Reduced sensitivity multiplier
+        this.gyroSmoothing = 0.1; // Smoothing factor for gyro input
+        this.gyroMultiplier = 0.001; // Reduced sensitivity multiplier
         
         // Keyboard event listeners
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
