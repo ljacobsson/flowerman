@@ -14,41 +14,46 @@ export class InputHandler {
         this.touchEndY = 0;
         this.gyroX = 0;
         this.gyroY = 0;
-        this.gyroSmoothing = 0.2; // Increased smoothing for slower response
-        this.gyroMultiplier = 0.05; // Reduced multiplier for less sensitivity
+        this.gyroSmoothing = 0.2;
+        this.gyroMultiplier = 0.05;
+        
+        // Check if iOS
+        this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         
         // Keyboard event listeners
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
         window.addEventListener('keyup', this.handleKeyUp.bind(this));
         
-        // Touch events
-        window.addEventListener('touchstart', this.handleTouchStart.bind(this));
-        window.addEventListener('touchend', this.handleTouchEnd.bind(this));
-        window.addEventListener('touchmove', this.handleTouchMove.bind(this));
+        // Touch events with iOS specific handling
+        if (this.isIOS) {
+            // iOS specific touch handling
+            document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+            document.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
+            document.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+        } else {
+            // Standard touch handling for other devices
+            window.addEventListener('touchstart', this.handleTouchStart.bind(this));
+            window.addEventListener('touchend', this.handleTouchEnd.bind(this));
+            window.addEventListener('touchmove', this.handleTouchMove.bind(this));
+        }
         
-        // Gyroscope event listener
+        // Gyroscope event listener with iOS specific handling
         if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (e) => {
-                // Smooth the gyro input with increased smoothing
-                this.gyroX = this.gyroX * (1 - this.gyroSmoothing) + 
-                            (e.gamma * this.gyroMultiplier) * this.gyroSmoothing;
-                
-                // Update movement based on tilt with increased threshold
-                this.keys.left = this.gyroX < -0.3;
-                this.keys.right = this.gyroX > 0.3;
-            });
-            
-            // Request permission for iOS 13+
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                document.body.addEventListener('click', () => {
-                    DeviceOrientationEvent.requestPermission()
-                        .then(permissionState => {
-                            if (permissionState === 'granted') {
-                                // Permission granted
-                            }
-                        })
-                        .catch(console.error);
+            if (this.isIOS) {
+                // iOS 13+ requires permission
+                document.addEventListener('click', () => {
+                    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        DeviceOrientationEvent.requestPermission()
+                            .then(permissionState => {
+                                if (permissionState === 'granted') {
+                                    window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this));
+                                }
+                            })
+                            .catch(console.error);
+                    }
                 }, { once: true });
+            } else {
+                window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this));
             }
         }
         
@@ -56,37 +61,41 @@ export class InputHandler {
         document.body.style.touchAction = 'none';
     }
     
-    handleTouchStart(e) {
-        // Always allow jump on tap
-        this.keys.up = true;
+    handleDeviceOrientation(e) {
+        if (!e.gamma) return; // Skip if no gamma value
         
-        // Only prevent scrolling during gameplay
-        if (this.game.gameState === 'playing' || this.game.gameState === 'panning') {
-            e.preventDefault();
-            this.touchStartX = e.touches[0].clientX;
-            this.touchStartY = e.touches[0].clientY;
-        }
+        // Smooth the gyro input
+        this.gyroX = this.gyroX * (1 - this.gyroSmoothing) + 
+                    (e.gamma * this.gyroMultiplier) * this.gyroSmoothing;
+        
+        // Update movement based on tilt
+        this.keys.left = this.gyroX < -0.3;
+        this.keys.right = this.gyroX > 0.3;
+    }
+    
+    handleTouchStart(e) {
+        e.preventDefault();
+        this.touchStartX = e.touches[0].clientX;
+        this.touchStartY = e.touches[0].clientY;
+        this.keys.up = true;
     }
     
     handleTouchEnd(e) {
-        // Only prevent scrolling during gameplay
-        if (this.game.gameState === 'playing' || this.game.gameState === 'panning') {
-            e.preventDefault();
-            this.touchEndX = e.changedTouches[0].clientX;
-            this.touchEndY = e.changedTouches[0].clientY;
-            
-            // Calculate swipe direction
-            const dx = this.touchEndX - this.touchStartX;
-            
-            // Only handle horizontal movement
-            if (Math.abs(dx) > 20) {
-                if (dx > 0) {
-                    this.keys.right = true;
-                    this.keys.left = false;
-                } else {
-                    this.keys.left = true;
-                    this.keys.right = false;
-                }
+        e.preventDefault();
+        this.touchEndX = e.changedTouches[0].clientX;
+        this.touchEndY = e.changedTouches[0].clientY;
+        
+        // Calculate swipe direction
+        const dx = this.touchEndX - this.touchStartX;
+        
+        // Only handle horizontal movement
+        if (Math.abs(dx) > 20) {
+            if (dx > 0) {
+                this.keys.right = true;
+                this.keys.left = false;
+            } else {
+                this.keys.left = true;
+                this.keys.right = false;
             }
         }
         
@@ -99,10 +108,7 @@ export class InputHandler {
     }
     
     handleTouchMove(e) {
-        // Only prevent scrolling during gameplay
-        if (this.game.gameState === 'playing' || this.game.gameState === 'panning') {
-            e.preventDefault();
-        }
+        e.preventDefault();
     }
     
     handleKeyDown(e) {
